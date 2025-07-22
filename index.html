@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="icon" href="https://i.ibb.co/zHSQ73jG/canvas-icon.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --header-bg: #2a303a;
+            --sidebar-bg: #334451;
+            --sbhs-dark-blue: #2d3b40; /* Slightly adjusted for better contrast */
+            --sbhs-light-gray: #f5f5f5;
+            --sbhs-border-gray: #c7cdd1;
+            --sbhs-red: #d41e00;
+            --sbhs-card-blue: #0374b5;
+            --sbhs-card-green: #0a874b;
+            --sbhs-card-purple: #6d3fc0;
+            --sbhs-card-orange: #e67e22;
+            --sbhs-card-pink: #e84393;
+        }
+        
+        body {
+            background-color: var(--sbhs-light-gray);
+            color: #333;
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column; /* Allow content to stack vertically */
+        }
+        
+        /* Top Header */
+        .top-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px; 
+            background-color: var(--header-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        /* Custom 3x3 Grid Icon */
+        .custom-grid-icon {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 20px; 
+            height: 20px; 
+            gap: 1px; 
+            opacity: 0.9;
+        }
+
+        .custom-grid-icon .square {
+            width: 5px; 
+            height: 5px; 
+            background-color: white; 
+            border-radius: 1px; 
+        }
+        
+        .school-name {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        .canvas-name {
+            font-size: 20px;
+            font-weight: 300;
+            margin-left: 5px;
+            color: #d0d4d8;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 53px; /* Changed width to 53px */
+            background-color: var(--sidebar-bg);
+            position: fixed;
+            top: 50px; 
+            bottom: 0;
+            left: 0;
+            z-index: 90;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-right: 1px solid var(--sbhs-border-gray);
+        }
+        
+        .nav-item {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 0;
+            color: #f0f0f0;
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 12px;
+            position: relative; /* For pulsing glow */
+        }
+        
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: #f0f0f0;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        /* Pulsing Glow Effect */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(100, 200, 255, 1); } /* Brighter, light blue */
+            70% { box-shadow: 0 0 0 20px rgba(100, 200, 255, 0); } /* Bigger spread */
+            100% { box-shadow: 0 0 0 0 rgba(100, 200, 255, 0); }
+        }
+
+        .nav-item.highlight-pulsing {
+            animation: pulse-glow 1.5s infinite;
+            border-radius: 8px; /* Apply border-radius for the glow */
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-top: 50px; 
+            margin-left: 53px; /* Adjusted margin-left to match new sidebar width */
+            padding: 30px;
+            position: relative; /* For absolute positioning of views */
+            display: flex; /* Use flex to manage child views */
+            flex-direction: column;
+        }
+
+        /* All direct children of main-content (dashboard, inbox, history views) */
+        .main-content > div { 
+            width: 100%;
+            height: 100%;
+            position: absolute; /* Position them absolutely to overlap */
+            top: 0;
+            left: 0;
+            padding: 30px; /* Apply padding consistently */
+            overflow-y: auto; /* Allow scrolling for content */
+            background-color: var(--sbhs-light-gray); /* Ensure background for hidden elements */
+            display: none; /* Hidden by default, controlled by JS */
+            flex-direction: column; /* Make them flex containers for internal layout */
+        }
+
+        #dashboardView {
+            display: block; /* Default visible view */
+        }
+        
+        .dashboard-header {
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--sbhs-border-gray);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            position: relative; /* Ensure it's above other content */
+            z-index: 2;
+            background-color: var(--sbhs-light-gray); /* Match body background */
+            padding-top: 0; /* Already has padding from main-content */
+        }
+        
+        .dashboard-title {
+            font-size: 32px; /* Increased font-size */
+            font-weight: 600; /* Decreased font-weight */
+            color: #273540;
+            margin-bottom: 5px;
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 150, 0, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            color: #28a745;
+        }
+        
+        .status-indicator .dot {
+            width: 8px;
+            height: 8px;
+            background: #28a745;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
+
+        .user-id-display {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+            word-break: break-all; 
+        }
+        
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); /* Decreased minmax width slightly */
+            gap: 20px;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 1px solid var(--sbhs-border-gray);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            height: 150px; 
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            background-color: #f0f0f0; 
+            display: flex;
+            align-items: flex-start;
+            justify-content: flex-end;
+            padding: 10px;
+        }
+
+        .card-header .options-icon {
+            color: white;
+            font-size: 20px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .card-header .options-icon:hover {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+        
+        .card-header.blue {
+            background: linear-gradient(to right, var(--sbhs-card-blue), #028ac9);
+        }
+        
+        .card-header.green {
+            background: linear-gradient(to right, var(--sbhs-card-green), #0b9a55);
+        }
+        
+        .card-header.red {
+            background: linear-gradient(to right, var(--sbhs-red), #e8422c);
+        }
+        
+        .card-header.purple {
+            background: linear-gradient(to right, var(--sbhs-card-purple), #7e4cd3);
+        }
+        
+        .card-header.orange {
+            background: linear-gradient(to right, var(--sbhs-card-orange), #f39c12);
+        }
+        
+        .card-header.pink {
+            background: linear-gradient(to right, var(--sbhs-card-pink), #fd79a8);
+        }
+        
+        .card-body {
+            padding: 20px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #2f6b9e; 
+            text-decoration: underline; 
+            white-space: nowrap; /* Ensure title stays on one line */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .card-subtitle {
+            font-size: 15px;
+            color: #2f6b9e; 
+            text-decoration: underline; 
+            margin-bottom: 10px; 
+            min-height: 20px; /* Adjusted min-height for single line */
+            white-space: nowrap; /* Force text to a single line */
+            overflow: hidden; /* Hide overflow */
+            text-overflow: ellipsis; /* Add ellipsis for overflow */
+        }
+
+        .game-tags { /* Removed from HTML, but keeping CSS if needed for future */
+            display: none; /* Hide tags */
+        }
+
+        .game-tag {
+            background-color: #e0e0e0;
+            color: #555;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center; 
+            color: #6c757d;
+            font-size: 14px;
+            padding-top: 15px;
+            border-top: 1px solid var(--sbhs-border-gray);
+        }
+        
+        .card-meta .meta-icons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card-meta .meta-icons i {
+            font-size: 18px; 
+            color: #888;
+            cursor: default; 
+            margin-right: 0; 
+        }
+
+        .card-meta .play-icon-only { 
+            display: flex;
+            align-items: center;
+        }
+
+        .card-meta .play-icon-only i {
+            margin-right: 0; 
+        }
+
+        .loading-card {
+            height: 200px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .loading-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -150px;
+            width: 150px;
+            height: 100%;
+            background: linear-gradient(to right, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%);
+            animation: loading 1.5s infinite;
+        }
+        
+        @keyframes loading {
+            from { left: -150px; }
+            to { left: 100%; }
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: #d41e00;
+            margin-bottom: 15px;
+        }
+        
+        /* Game Preview Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .game-modal {
+            background: white;
+            border-radius: 10px;
+            width: 80%; /* Adjusted width to 80% */
+            height: 80vh; /* Adjusted height to 80vh */
+            max-width: 1200px; /* Increased max-width */
+            max-height: 80vh; /* Adjusted max-height */
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-overlay.active .game-modal {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            background: var(--sbhs-dark-blue);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0; 
+        }
+        
+        .modal-title {
+            font-size: 22px;
+            font-weight: 600;
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        
+        .close-modal:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .modal-content {
+            padding: 25px;
+            flex-grow: 1; /* Allow content to grow */
+            overflow-y: auto; /* Enable scrolling if content overflows */
+            max-height: calc(100% - 100px); /* Adjusted max-height based on new modal height (header + potential footer) */
+        }
+        
+        .game-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .game-player {
+            background: #f1f1ef;
+            height: 75vh; /* Made significantly larger, relative to viewport height */
+            width: 100%; 
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .game-player iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        .play-button {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: var(--sbhs-card-blue);
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
+        
+        .play-button:hover {
+            background: #0367a0;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            gap: 10px;
+        }
+        
+        .control-btn {
+            padding: 10px 18px;
+            background: #f0f0f0;
+            border: 1px solid var(--sbhs-border-gray);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            font-size: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-btn:hover {
+            background: #e0e0e0;
+            border-color: #b0b0b0;
+        }
+        
+        /* Footer styles */
+        .app-footer {
+            margin-top: auto; 
+            padding: 15px 30px;
+            background-color: var(--header-bg); 
+            color: #d0d4d8;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap; 
+            gap: 10px;
+        }
+
+        .app-footer .status-indicator,
+        .app-footer .user-id-display {
+            margin: 0; 
+        }
+        
+        /* Tour Modal */
+        .tour-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001; /* Higher than game modal */
+            display: none; /* Hidden by default */
+        }
+
+        .tour-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative; /* For arrow */
+        }
+
+        .tour-modal-content h2 {
+            font-size: 24px;
+            color: var(--sbhs-dark-blue);
+            margin-bottom: 20px;
+        }
+
+        .tour-modal-content p {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        .tour-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .tour-navigation button {
+            padding: 10px 20px;
+            background-color: var(--sbhs-card-blue);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .tour-navigation button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .tour-navigation button:hover:not(:disabled) {
+            background-color: #0367a0;
+        }
+
+        .tour-arrow {
+            position: absolute;
+            width: 0;
+            height: 0;
+            /* Using solid borders for direction */
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 15px solid transparent; /* default */
+            border-bottom: 15px solid white; /* default for pointing up */
+            top: -15px; 
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1003; 
+            display: none;
+        }
+
+        /* Calendar Link Input Modal */
+        .calendar-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002; /* Higher than welcome modal */
+            display: none; /* Hidden by default */
+        }
+
+        .calendar-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .calendar-modal-content h2 {
+            font-size: 24px;
+            color: var(--sbhs-dark-blue);
+            margin-bottom: 20px;
+        }
+
+        .calendar-modal-content input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--sbhs-border-gray);
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        .calendar-modal-content button {
+            padding: 10px 25px;
+            background-color: var(--sbhs-card-blue);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .calendar-modal-content button:hover {
+            background-color: #0367a0;
+        }
+
+        /* Inbox View - Specific positioning */
+        #inboxView {
+            position: relative; /* Make it a positioning context for its children */
+            /* It inherits display: none/flex from .main-content > div and width/height 100% */
+        }
+
+        #inboxView .iframe-container {
+            position: absolute; /* Positioned relative to #inboxView */
+            bottom: 30px; /* Aligned with main-content's bottom padding */
+            left: 30px;  /* Aligned with main-content's left padding */
+            width: calc(100% - 60px); /* Fill width minus padding on both sides */
+            height: calc(100% - 150px); /* Calculate height: full height minus header height and padding */
+            background-color: white; /* Ensure background for the iframe area */
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15); /* More subtle shadow */
+            overflow: hidden; /* Hide overflow from iframe */
+            display: flex; /* For centering the message */
+            align-items: center;
+            justify-content: center;
+        }
+
+        #inboxView iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            /* border-radius and box-shadow handled by parent .iframe-container */
+            transform-origin: top left; /* For zoom */
+        }
+
+        .inbox-message {
+            text-align: center;
+            color: #6c757d;
+            font-size: 18px;
+            padding: 20px;
+            max-width: 80%; /* Don't let it stretch too much */
+        }
+
+        /* History View */
+        .history-view {
+            flex-direction: column; /* Inherited from .main-content > div */
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 50px;
+        }
+
+        .history-view h2 {
+            font-size: 24px;
+            color: var(--sbhs-dark-blue);
+            margin-bottom: 30px;
+        }
+
+        .zoom-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 400px;
+        }
+
+        .zoom-control label {
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .zoom-control input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 8px;
+            background: #ddd;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+
+        .zoom-control input[type="range"]:hover {
+            opacity: 1;
+        }
+
+        .zoom-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: var(--sbhs-card-blue);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .zoom-control input[type="range"]::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: var(--sbhs-card-blue);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .zoom-control .zoom-value {
+            font-size: 16px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .history-message {
+            text-align: center;
+            color: #6c757d;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .cards-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .game-player {
+                height: 500px; /* Adjusted for smaller screens */
+            }
+
+            .game-modal {
+                width: 95%; /* Adjusted for smaller screens */
+                height: 90vh; /* Adjusted for smaller screens */
+                max-height: 90vh;
+            }
+
+            .modal-content {
+                max-height: calc(90vh - 100px);
+            }
+
+            .app-footer {
+                justify-content: center;
+                text-align: center;
+            }
+
+            .welcome-modal-content,
+            .calendar-modal-content,
+            .tour-modal-content {
+                margin: 20px;
+                padding: 20px;
+            }
+            .main-content > div {
+                padding: 20px;
+            }
+
+            #inboxView .iframe-container {
+                width: calc(100% - 40px); /* Adjust padding for smaller screens */
+                height: calc(100% - 120px); /* Adjust height for smaller screens */
+                bottom: 20px;
+                left: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .school-name, .canvas-name {
+                font-size: 16px;
+            }
+            
+            .modal-header {
+                padding: 15px;
+            }
+            
+            .modal-content {
+                padding: 15px;
+            }
+            
+            .game-player {
+                height: 400px; /* Adjusted for very small screens */
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .control-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .app-footer {
+                flex-direction: column;
+                padding: 10px;
+            }
+            .main-content > div {
+                padding: 15px;
+            }
+            #inboxView .iframe-container {
+                width: calc(100% - 30px); /* Adjust padding for very small screens */
+                height: calc(100% - 100px); /* Adjust height for very small screens */
+                bottom: 15px;
+                left: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-header">
+        <div class="logo-container">
+            <div class="custom-grid-icon">
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+                <div class="square"></div>
+            </div>
+            <div>
+                <span class="school-name"></span>
+                <span class="canvas-name">Canvas 9VA9</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="sidebar">
+        <a href="#" class="nav-item active" id="dashboardNavItem">
+            <i class="fas fa-home"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" id="groupsNavItem">
+            <i class="fas fa-users"></i>
+            <span>Groups</span>
+        </a>
+        <a href="#" class="nav-item" id="gamesSubjectsNavItem">
+            <i class="fas fa-gamepad"></i>
+            <span>Games</span>
+        </a>
+        <a href="#" class="nav-item" id="calendarNavItem">
+            <i class="fas fa-calendar"></i>
+            <span>Calendar</span>
+        </a>
+        <a href="#" class="nav-item" id="inboxNavItem">
+            <i class="fas fa-inbox"></i>
+            <span>Inbox</span>
+        </a>
+        <a href="#" class="nav-item" id="historyNavItem">
+            <i class="fas fa-history"></i>
+            <span>History</span>
+        </a>
+        <a href="#" class="nav-item">
+            <i class="fas fa-video"></i>
+            <span>Studio</span>
+        </a>
+        <a href="#" class="nav-item" id="helpNavItem">
+            <i class="fas fa-question-circle"></i>
+            <span>Help</span>
+        </a>
+    </div>
+    
+    <div class="main-content">
+        <div id="dashboardView">
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Dashboard</h1>
+            </div>
+            <div class="cards-grid" id="games-container">
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+                <div class="loading-card"></div>
+            </div>
+        </div>
+
+        <div id="inboxView" class="inbox-view">
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Inbox</h1>
+            </div>
+            <div class="iframe-container">
+                <iframe id="canvasIframe" src="" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                <p id="inboxMessage" class="inbox-message">Please insert your Canvas link via the Calendar tab.</p>
+            </div>
+        </div>
+
+        <div id="historyView" class="history-view">
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">History</h1>
+            </div>
+            <div class="zoom-control">
+                <label for="zoomSlider">Zoom:</label>
+                <input type="range" id="zoomSlider" min="50" max="200" value="100">
+                <span class="zoom-value" id="zoomValue">100%</span>
+                <p id="zoomMessage" class="history-message" style="display: none;">Zoom is only active when the Inbox (Canvas) is open.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="gameModal">
+        <div class="game-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalGameTitle">Game Title</h2>
+                <button class="close-modal" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-content">
+                <div class="game-player">
+                    <iframe id="gameEmbed" src="" frameborder="0" allow="autoplay; fullscreen" allowfullscreen></iframe>
+                </div>
+                <p class="game-description" id="modalGameDescription">Game description will appear here.</p>
+                
+                <div class="controls">
+                    <button class="control-btn" id="muteBtn">
+                        <i class="fas fa-volume-up"></i> Mute
+                    </button>
+                    <button class="control-btn" id="restartBtn">
+                        <i class="fas fa-redo"></i> Restart
+
+                    </button>
+                </div>
+                
+                <button class="play-button" id="fullScreenButton">
+                    <i class="fas fa-expand"></i> Full Screen
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tour-modal-overlay" id="tourModal">
+        <div class="tour-modal-content">
+            <div class="tour-arrow" id="tourArrow"></div>
+            <h2 id="tourTitle">Welcome!</h2>
+            <p id="tourText"></p>
+            <div class="tour-navigation">
+                <button id="tourBackBtn" disabled><i class="fas fa-arrow-left"></i> Back</button>
+                <button id="tourNextBtn">Next <i class="fas fa-arrow-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-modal-overlay" id="calendarModal">
+        <div class="calendar-modal-content">
+            <h2>Insert Your Canvas Link</h2>
+            <p>Please paste the URL of your Canvas page below:</p>
+            <input type="text" id="canvasLinkInput" placeholder="e.g., https://your-school.instructure.com/courses/12345">
+            <button id="saveCanvasLinkBtn">Save Link</button>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <div class="status-indicator">
+            <div class="dot"></div>
+            <span>Connected to Firebase - Real-time updates active</span>
+        </div>
+        <div class="user-id-display" id="currentUserIdDisplay">User ID: Loading...</div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            collection,
+            onSnapshot, // Using onSnapshot for real-time updates
+            getDocs, // Kept for reference, but onSnapshot is used for real-time display
+            addDoc,
+            deleteDoc,
+            doc
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 1. Your Firebase config - IMPORTANT: Use the __firebase_config global variable if available
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "AIzaSyAOrYAgq8s_mxgVTHA4__hoRTg5u8f85MM",
+            authDomain: "game-portal-c0b44.firebaseapp.com",
+            projectId: "game-portal-c0b44",
+            storageBucket: "game-portal-c0b44.firebasestorage.app",
+            messagingSenderId: "94063829166",
+            appId: "1:94063829166:web:45cba1458d39609c4c4d3f"
+        };
+        
+        // 2. Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Expose Firebase instances globally for the main script
+        window.firebaseApp = app;
+        window.db = db;
+        window.auth = auth;
+        window.currentUserId = null; // Will be set on auth state change
+        window.gamesData = []; // Initialize global gamesData array
+        let currentSidebarMode = 'games'; // State to track current sidebar mode ('games' or 'subjects')
+        let currentMainView = 'dashboard'; // State to track current main content view ('dashboard', 'inbox', 'history')
+        let previousMainView = 'dashboard'; // Stores the view before the current one for hotkey navigation
+
+        // 3. Login (anonymous) and listen for auth state changes
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                console.log("Logged in as:", user.uid);
+                window.currentUserId = user.uid;
+                // Update the User ID display
+                const userIdDisplay = document.getElementById('currentUserIdDisplay');
+                if (userIdDisplay) {
+                    userIdDisplay.textContent = `User ID: ${user.uid}`;
+                }
+                // Once authenticated, start listening for games
+                window.initializeFirebaseListener(); 
+            } else {
+                // If no user, sign in anonymously
+                await signInAnonymously(auth);
+            }
+        });
+
+        // Function to load games from Firebase using onSnapshot for real-time updates
+        window.initializeFirebaseListener = function() {
+            if (!window.db) {
+                console.error("Firestore DB not initialized yet.");
+                window.showErrorState();
+                return;
+            }
+            // Use onSnapshot for real-time updates
+            onSnapshot(collection(window.db, "games"), (snapshot) => {
+                const games = [];
+                snapshot.forEach((doc) => {
+                    games.push({ id: doc.id, ...doc.data() });
+                });
+                window.gamesData = games; // Update global gamesData
+                
+                // Only render if in 'games' mode and dashboard view is active
+                if (currentSidebarMode === 'games' && currentMainView === 'dashboard') {
+                    window.renderGameCards(games); 
+                    // If no games from Firestore, show sample data
+                    if (games.length === 0) {
+                        window.renderGameCards(window.sampleGames);
+                        console.warn("No games found in Firestore. Displaying sample data.");
+                    }
+                }
+            }, (error) => {
+                console.error("Error listening to games collection: ", error);
+                window.showErrorState(); // Show error and fallback to sample data
+            });
+        };
+
+        // 5. Add game to Firebase (exposed globally)
+        window.addGameToFirestore = async function(game) {
+            try {
+                await addDoc(collection(window.db, "games"), game);
+                // No need to call loadGamesFromFirestore, onSnapshot will handle it
+                console.log(`${game.title} added successfully!`);
+            } catch (error) {
+                console.error("Error adding game to Firestore:", error);
+            }
+        };
+
+        // 6. Delete game from Firebase (exposed globally)
+        window.deleteGameFromFirestore = async function(id) {
+            try {
+                await deleteDoc(doc(window.db, "games", id));
+                // No need to call loadGamesFromFirestore, onSnapshot will handle it
+                console.log('Game deleted successfully!');
+            } catch (error) {
+                console.error("Error deleting game from Firestore:", error);
+            }
+        };
+
+        // Sample game data for demonstration (fallback)
+        // IMPORTANT: Many websites block their content from being embedded in iframes
+        // due to security policies (like X-Frame-Options). Ensure your embedUrl points
+        // to a source that allows embedding. Check your browser's developer console (F12)
+        // for "Refused to display '...' in a frame because it set 'X-Frame-Options' to 'deny'." errors.
+        window.sampleGames = [
+            {
+                id: "sample1",
+                title: "9 Mathematics Stage 5 U (2025)",
+                description: "Test your math skills in this exciting puzzle game. Solve equations, unlock levels, and compete with classmates for the highest score!",
+                url: "https://www.mathplayground.com/embed_puzzle.html?puzzle=2048", // Using 'url'
+                thumbnail: "https://placehold.co/400x150/ADD8E6/000000?text=Math+Challenge+Image", // Using 'thumbnail'
+                color: "blue",
+                placeholderIcons: {
+                    icon1: "fas fa-user", // Example icon
+                    icon2: "fas fa-edit" // Example icon
+                }
+            },
+            {
+                id: "sample2",
+                title: "2048 Puzzle",
+                description: "A classic number puzzle. Combine tiles to reach the 2048 tile!",
+                url: "https://www.crazygames.com/embed/2048-puzzle", // Using 'url'
+                thumbnail: "https://placehold.co/400x150/90EE90/000000?text=2048+Puzzle+Image", // Using 'thumbnail'
+                color: "purple",
+                placeholderIcons: {
+                    icon1: "fas fa-star",
+                    icon2: "fas fa-share-alt"
+                }
+            },
+            {
+                id: "sample3",
+                title: "Science Lab: Chemical Equations",
+                description: "Perform experiments and discover new elements. Mix chemicals, observe reactions, and learn the principles of physics in this interactive lab!",
+                url: "https://phet.colorado.edu/sims/html/balancing-chemical-equations/latest/balancing-chemical-equations_en.html", // Using 'url'
+                thumbnail: "https://placehold.co/400x150/FFB6C1/000000?text=Science+Lab+Image", // Using 'thumbnail'
+                color: "green",
+                placeholderIcons: {
+                    icon1: "fas fa-flask",
+                    icon2: "fas fa-chart-bar"
+                }
+            },
+            {
+                id: "sample4",
+                title: "Word Search",
+                description: "Build your vocabulary while solving puzzles. Find hidden words in a grid!",
+                url: "https://www.crazygames.com/embed/word-search", // Using 'url'
+                thumbnail: "https://placehold.co/400x150/FFD700/000000?text=Word+Search+Image", // Using 'thumbnail'
+                color: "red",
+                placeholderIcons: {
+                    icon1: "fas fa-book",
+                    icon2: "fas fa-lightbulb"
+                }
+            },
+            {
+                id: "sample5",
+                title: "Physics Playground: Forces & Motion",
+                description: "Experiment with physics in this interactive sandbox. Build structures, test gravity, and discover how the physical world works!",
+                url: "https://phet.colorado.edu/sims/html/forces-and-motion-basics/latest/forces-and-motion-basics_en.html", // Using 'url'
+                thumbnail: "https://placehold.co/400x150/DDA0DD/000000?text=Physics+Playground+Image", // Using 'thumbnail'
+                color: "orange",
+                placeholderIcons: {
+                    icon1: "fas fa-atom",
+                    icon2: "fas fa-ruler"
+                }
+            },
+            {
+                id: "sample6",
+                title: "World Flags Quiz",
+                description: "Discover countries, capitals and landmarks. Test your knowledge of world flags!",
+                url: "https://www.crazygames.com/embed/world-flags-quiz", // Using 'url'
+                thumbnail: "https://placehold.co/400x150/87CEEB/000000?text=World+Flags+Quiz+Image", // Using 'thumbnail'
+                color: "pink",
+                placeholderIcons: {
+                    icon1: "fas fa-globe-americas",
+                    icon2: "fas fa-map-marker-alt"
+                }
+            }
+        ];
+
+        // Placeholder games for "Subjects" mode, all using the provided image
+        const subjectCardThumbnail = "https://instructure-uploads-apse2.s3.ap-southeast-2.amazonaws.com/account_149420000000000001/attachments/156/course-image.jpg?response-content-disposition=attachment%3B%20filename%3D%22course-image.jpg%22%3B%20filename%2A%3DUTF-8%27%27course%252Dimage.jpg&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAUPKAAFAE43IMAN4Q%2F20250714%2Fap-southeast-2%2Fs3%2Faws4_request&X-Amz-Date=20250714T092511Z&X-Amz-Expires=604800&X-Amz-Security-Token=FwoGZXIvYXdzEB4aDFBSCrc%2BRFMNtJ59hCLcAVg5kHQm1OeQXpFlMl%2BeTKQRu8jacQIVnDtta6DDjaHcU2b%2FGJe0IZRGI10YX7Wqwgt7S%2FcDWEmUsXml6MH1ijgw86D3%2Fjn3XS3FjrVw2NqJOo%2F3qNicTczSw9JX5nH3eT3UHk5eqxdkQ6vngvAgy2es7StiBJPPCerh7SLFVIoP7rnouc5VZKIQTNL6fP12PNYKPOZBcTYfmpVR4bBxUCISFN6%2FJiBrGTuHkk230da1ZOo7LS58HQUfKXOZ98Ya2ZlE0nBYPSij%2F31j8ToWihDqgDETM8r5bRSjwhgo%2B5DSwwYyLfiziHFOqQH8ZSA7s1rWQGPODpv%2FnAmX0gNKBNAR8bp%2B0zVRDm%2BC6kKDxcCP4w%3D%3D&X-Amz-SignedHeaders=host&X-Amz-Signature=d6d2743be0fc5a2d02281d7ce88d9f6987ef123c56d08ba202d378f3ee226be2";
+
+        window.placeholderGames = [
+            { id: "group-maths", title: "9 Maths 2025", description: "9 Maths 2025", url: "https://www.mathplayground.com/embed_puzzle.html?puzzle=2048", thumbnail: subjectCardThumbnail, color: "blue", placeholderIcons: {} },
+            { id: "group-science", title: "9 Science 2025", description: "9 Science 2025", url: "https://phet.colorado.edu/sims/html/balancing-chemical-equations/latest/balancing-chemical-equations_en.html", thumbnail: subjectCardThumbnail, color: "green", placeholderIcons: {} },
+            { id: "group-english", title: "9 English 2025", description: "9 English 2025", url: "https://www.crazygames.com/embed/word-search", thumbnail: subjectCardThumbnail, color: "pink", placeholderIcons: {} },
+            { id: "group-history", title: "9 History 2025", description: "9 History 2025", url: "https://www.coolmathgames.com/0-worlds-hardest-game/play", thumbnail: subjectCardThumbnail, color: "purple", placeholderIcons: {} },
+            { id: "group-geography", title: "9 Geography 2025", description: "9 Geography 2025", url: "https://www.crazygames.com/embed/world-flags-quiz", thumbnail: subjectCardThumbnail, color: "blue", placeholderIcons: {} },
+            { id: "group-art", title: "9 Art 2025", description: "9 Art 2025", url: "https://www.crazygames.com/embed/draw-and-guess", thumbnail: subjectCardThumbnail, color: "orange", placeholderIcons: {} },
+            { id: "group-music", title: "9 Music 2025", description: "9 Music 2025", url: "https://www.crazygames.com/embed/piano-tiles-2", thumbnail: subjectCardThumbnail, color: "red", placeholderIcons: {} },
+            { id: "group-pdhpe", title: "9 PDHPE 2025", description: "9 PDHPE 2025", url: "https://www.crazygames.com/embed/basketball-legends-2020", thumbnail: subjectCardThumbnail, color: "green", placeholderIcons: {} },
+            { id: "group-technology", title: "9 Technology 2025", description: "9 Technology 2025", url: "https://www.crazygames.com/embed/paper-io-2", thumbnail: subjectCardThumbnail, color: "purple", placeholderIcons: {} },
+            { id: "group-commerce", title: "9 Commerce 2025", description: "9 Commerce 2025", url: "https://www.crazygames.com/embed/idle-mining-tycoon", thumbnail: subjectCardThumbnail, color: "orange", placeholderIcons: {} },
+            { id: "group-languages", title: "9 Languages 2025", description: "9 Languages 2025", url: "https://www.crazygames.com/embed/lingo-play", thumbnail: subjectCardThumbnail, color: "pink", placeholderIcons: {} }
+        ];
+
+    </script>
+
+    <script>
+        // DOM Elements
+        const gamesContainer = document.getElementById('games-container');
+        const gameModal = document.getElementById('gameModal');
+        const modalGameTitle = document.getElementById('modalGameTitle');
+        const modalGameDescription = document.getElementById('modalGameDescription');
+        const gameEmbed = document.getElementById('gameEmbed');
+        const fullScreenButton = document.getElementById('fullScreenButton');
+        const closeModal = document.getElementById('closeModal');
+        const muteBtn = document.getElementById('muteBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const userIdDisplay = document.getElementById('currentUserIdDisplay');
+        
+        // Sidebar Nav Items
+        const dashboardNavItem = document.getElementById('dashboardNavItem');
+        const groupsNavItem = document.getElementById('groupsNavItem');
+        const gamesSubjectsNavItem = document.getElementById('gamesSubjectsNavItem'); // The toggling item
+        const calendarNavItem = document.getElementById('calendarNavItem');
+        const inboxNavItem = document.getElementById('inboxNavItem');
+        const historyNavItem = document.getElementById('historyNavItem');
+        const helpNavItem = document.getElementById('helpNavItem'); 
+
+        // Modals
+        const tourModal = document.getElementById('tourModal'); // New tour modal
+        const tourTitle = document.getElementById('tourTitle');
+        const tourText = document.getElementById('tourText');
+        const tourBackBtn = document.getElementById('tourBackBtn');
+        const tourNextBtn = document.getElementById('tourNextBtn');
+        const tourArrow = document.getElementById('tourArrow');
+
+        const calendarModal = document.getElementById('calendarModal');
+        const canvasLinkInput = document.getElementById('canvasLinkInput');
+        const saveCanvasLinkBtn = document.getElementById('saveCanvasLinkBtn');
+
+        // Main Content Views
+        const dashboardView = document.getElementById('dashboardView');
+        const inboxView = document.getElementById('inboxView');
+        const canvasIframe = document.getElementById('canvasIframe');
+        const inboxMessage = document.getElementById('inboxMessage');
+        const historyView = document.getElementById('historyView');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomValueSpan = document.getElementById('zoomValue');
+        const zoomMessage = document.getElementById('zoomMessage');
+        
+        // Elements within gamesSubjectsNavItem
+        const gamesModeIcon = gamesSubjectsNavItem.querySelector('i');
+        const gamesModeText = gamesSubjectsNavItem.querySelector('span');
+
+        // Global State Variables
+        let currentGame = null;
+        let isMuted = false;
+        let currentSidebarMode = 'games'; // 'games' or 'subjects'
+        let currentMainView = 'dashboard'; // 'dashboard', 'inbox', 'history'
+        let previousMainView = 'dashboard'; // Stores the view before the current one for hotkey navigation
+        let currentZoomLevel = parseFloat(localStorage.getItem('canvasZoom')) || 100;
+        let isInTourMode = false; // New global flag for tour mode
+
+        // Tour related variables
+        let currentTourStepIndex = 0;
+        const tourSteps = [
+            {
+                title: "Welcome to Your Dashboard!",
+                text: "Let's take a quick tour of the main features in your sidebar. Click 'Next' to begin!",
+                targetId: null,
+                preAction: () => {
+                    showView('dashboard'); // Ensure we are on dashboard view
+                    currentSidebarMode = 'games'; // Ensure games mode
+                    updateGamesSubjectsToggleUI(); // Update UI
+                }
+            },
+            {
+                title: "Your Dashboard",
+                text: "This is your main Dashboard, where you'll find all your exciting games and important course information.",
+                targetId: 'dashboardNavItem'
+            },
+            {
+                title: "Games / Subjects Toggle",
+                text: "This icon lets you switch between a fun 'Games' view and an 'Educational Subjects' view. Click 'Next' to see it change!",
+                targetId: 'gamesSubjectsNavItem',
+                action: () => {
+                    currentSidebarMode = 'subjects';
+                    updateGamesSubjectsToggleUI();
+                    window.renderGameCards(window.placeholderGames);
+                }
+            },
+            {
+                title: "Now in Subjects Mode!",
+                text: "You're now in 'Subjects' mode, showing educational content. Click 'Next' to switch back to 'Games' mode.",
+                targetId: 'gamesSubjectsNavItem',
+                action: () => {
+                    currentSidebarMode = 'games';
+                    updateGamesSubjectsToggleUI();
+                    window.renderGameCards(window.gamesData.length > 0 ? window.gamesData : window.sampleGames);
+                }
+            },
+            {
+                title: "Set Your Canvas Link",
+                text: "Click the 'Calendar' icon to open a popup where you can paste your personal Canvas link. This link will be saved for easy access!",
+                targetId: 'calendarNavItem',
+                action: () => {
+                    calendarModal.style.display = 'flex';
+                    canvasLinkInput.value = localStorage.getItem('canvasLink') || '';
+                }
+            },
+            {
+                title: "View Your Canvas Inbox",
+                text: "Once your Canvas link is saved, click 'Inbox' to open your Canvas page right here in the dashboard! (Make sure to close the link input popup first if it's open)",
+                targetId: 'inboxNavItem',
+                action: () => {
+                    calendarModal.style.display = 'none'; // Close calendar modal if open
+                    showView('inbox'); // This will handle the iframe loading based on isInTourMode
+                }
+            },
+            {
+                title: "Zoom Your Canvas View",
+                text: "If you're viewing your Canvas page in Inbox, head over to the 'History' tab. There you'll find a handy zoom slider to adjust the size of the Canvas content.",
+                targetId: 'historyNavItem',
+                action: () => {
+                    showView('history');
+                }
+            },
+            {
+                title: "VERY IMPORTANT ( TO OPEN YOUR REAL CANVAS WHEN A TEACHER COMES)",
+                text: "When inbox opened, your real canvas website will go into full screen, to go back to game portal click the back/undo arrow on your browser to go back the your actual canvas after that click the forward/redo button in your browser",
+                targetId: null // No specific element to highlight for hotkeys
+            },
+            {
+                title: "Need Help Again?",
+                text: "You can always restart this tour by clicking the 'Help' icon in the sidebar. Enjoy exploring your new dashboard!",
+                targetId: 'helpNavItem'
+            },
+            {
+                title: "Tour Complete!",
+                text: "You're all set! Enjoy using your personalized dashboard.",
+                targetId: null,
+                action: () => {
+                    endTour();
+                }
+            }
+        ];
+
+        // Function to create a game card
+        function createGameCard(game) {
+            const card = document.createElement('div');
+            card.className = 'dashboard-card';
+            card.dataset.id = game.id;
+            
+            // Set background image using the 'thumbnail' field
+            const headerStyle = game.thumbnail ? `background-image: url('${game.thumbnail}');` : '';
+
+            // Generate placeholder icons HTML
+            const placeholderIconsHtml = (game.placeholderIcons && (game.placeholderIcons.icon1 || game.placeholderIcons.icon2)) ? `
+                <div class="meta-icons">
+                    ${game.placeholderIcons.icon1 ? `<i class="${game.placeholderIcons.icon1}"></i>` : ''}
+                    ${game.placeholderIcons.icon2 ? `<i class="${game.placeholderIcons.icon2}"></i>` : ''}
+                </div>
+            ` : '';
+
+            // Shorten description if it's too long
+            const displayDescription = game.description && game.description.length > 50 ? 
+                                       game.description.substring(0, 47) + '...' : 
+                                       game.description || 'No description available';
+
+
+            card.innerHTML = `
+                <div class="card-header ${game.color || 'blue'}" style="${headerStyle}">
+                    <div class="options-icon">
+                        <i class="fas fa-ellipsis-v"></i> </div>
+                </div>
+                <div class="card-body">
+                    <div class="card-subtitle">${displayDescription}</div> <h3 class="card-title">${game.title || 'Untitled Game'}</h3>
+                    <div class="card-meta">
+                        <div class="play-icon-only"><i class="fas fa-play-circle"></i></div> ${placeholderIconsHtml} </div>
+                </div>
+            `;
+            
+            // Add click event to show game details
+            card.addEventListener('click', () => {
+                showGameDetails(game);
+            });
+            
+            return card;
+        }
+
+        // Function to render game cards to the DOM
+        window.renderGameCards = function(games) {
+            gamesContainer.innerHTML = ''; // Clear existing cards
+            if (games.length === 0) {
+                // If no games are passed, or the array is empty, show empty state
+                gamesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-box-open"></i>
+                        <h3>No Games Available</h3>
+                        <p>It looks like there are no games added to the database yet. Check back later!</p>
+                    </div>
+                `;
+            } else {
+                games.forEach(game => {
+                    gamesContainer.appendChild(createGameCard(game));
+                });
+            }
+        };
+
+        // Function to show game details in modal
+        function showGameDetails(game) {
+            currentGame = game;
+            modalGameTitle.textContent = game.title;
+            modalGameDescription.textContent = game.description;
+            
+            // Load the embedded game using its 'url' field
+            gameEmbed.src = game.url || '';
+            
+            gameModal.classList.add('active');
+        }
+
+        // Function to show error state and fallback to sample data
+        window.showErrorState = function() {
+            gamesContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Connection Error</h3>
+                    <p>Could not connect to Firebase or load data. Displaying sample games.</p>
+                </div>
+            `;
+            window.renderGameCards(window.sampleGames); // Fallback to sample data
+        };
+
+        // Function to update sidebar UI (icon and text) for Games/Subjects toggle
+        function updateGamesSubjectsToggleUI() {
+            if (currentSidebarMode === 'games') {
+                gamesModeIcon.className = 'fas fa-gamepad';
+                gamesModeText.textContent = 'Games';
+            } else { // currentSidebarMode === 'subjects'
+                gamesModeIcon.className = 'fas fa-book-open'; // Educational icon
+                gamesModeText.textContent = 'Subjects';
+            }
+        }
+
+        // Function to update main content view and sidebar active state
+        function showView(newViewName) {
+            // Only update previousMainView if we are actually changing the view
+            if (newViewName !== currentMainView) {
+                previousMainView = currentMainView;
+            }
+            currentMainView = newViewName;
+
+            // Deactivate all nav items
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+            // Hide all main content views
+            dashboardView.style.display = 'none';
+            inboxView.style.display = 'none';
+            historyView.style.display = 'none';
+
+            // Show the requested view and activate its nav item
+            switch (currentMainView) {
+                case 'dashboard':
+                    dashboardView.style.display = 'flex';
+                    // Activate either dashboard or gamesSubjects depending on sidebar mode
+                    if (currentSidebarMode === 'games') {
+                        dashboardNavItem.classList.add('active');
+                        window.renderGameCards(window.gamesData.length > 0 ? window.gamesData : window.sampleGames);
+                    } else { // currentSidebarMode === 'subjects'
+                        gamesSubjectsNavItem.classList.add('active');
+                        window.renderGameCards(window.placeholderGames);
+                    }
+                    break;
+                case 'inbox':
+                    inboxView.style.display = 'flex';
+                    inboxNavItem.classList.add('active');
+                    
+                    if (isInTourMode) { // If in tour mode, do not load iframe
+                        canvasIframe.src = ''; // Clear iframe src
+                        canvasIframe.style.display = 'none';
+                        inboxMessage.style.display = 'flex'; // Show message
+                    } else {
+                        const savedLink = localStorage.getItem('canvasLink');
+                        if (savedLink) {
+                            canvasIframe.src = savedLink;
+                            canvasIframe.style.display = 'block';
+                            inboxMessage.style.display = 'none';
+                            // Apply current zoom level when inbox is opened
+                            canvasIframe.style.transform = `scale(${currentZoomLevel / 100})`;
+                        } else {
+                            canvasIframe.src = '';
+                            canvasIframe.style.display = 'none';
+                            inboxMessage.style.display = 'flex';
+                        }
+                    }
+                    break;
+                case 'history':
+                    historyView.style.display = 'flex';
+                    historyNavItem.classList.add('active');
+                    
+                    const hasCanvasLink = localStorage.getItem('canvasLink');
+                    // Zoom slider is enabled if a Canvas link exists, regardless of whether Inbox is currently visible.
+                    zoomSlider.disabled = !hasCanvasLink;
+                    zoomMessage.style.display = hasCanvasLink ? 'none' : 'block';
+
+                    // Ensure slider reflects current zoom level
+                    zoomSlider.value = currentZoomLevel;
+                    zoomValueSpan.textContent = `${currentZoomLevel}%`;
+                    break;
+                // Add cases for other views if they get dedicated content
+                default:
+                    dashboardView.style.display = 'flex'; // Fallback to dashboard
+                    dashboardNavItem.classList.add('active');
+                    window.renderGameCards(window.gamesData.length > 0 ? window.gamesData : window.sampleGames);
+                    break;
+            }
+
+            // Update games/subjects toggle icon/text (redundant here, but good for clarity)
+            updateGamesSubjectsToggleUI();
+        }
+
+        // Tour Functions
+        function showTour() {
+            isInTourMode = true; // Set tour mode flag
+            tourModal.style.display = 'flex';
+            currentTourStepIndex = 0; // Start from the beginning
+            updateTourContent();
+        }
+
+        function updateTourContent() {
+            // Remove previous highlight
+            document.querySelectorAll('.nav-item.highlight-pulsing').forEach(item => {
+                item.classList.remove('highlight-pulsing');
+            });
+            calendarModal.style.display = 'none'; // Ensure calendar modal is closed during tour
+
+            const step = tourSteps[currentTourStepIndex];
+            tourTitle.textContent = step.title;
+            tourText.innerHTML = step.text; // Use innerHTML for bold tags
+
+            // Highlight target element if specified
+            if (step.targetId) {
+                const targetElement = document.getElementById(step.targetId);
+                if (targetElement) {
+                    targetElement.classList.add('highlight-pulsing');
+                    // Position arrow
+                    const rect = targetElement.getBoundingClientRect();
+                    const sidebarRect = document.querySelector('.sidebar').getBoundingClientRect();
+                    const modalRect = tourModal.querySelector('.tour-modal-content').getBoundingClientRect();
+
+                    tourArrow.style.display = 'block';
+                    // Arrow should point from the modal towards the sidebar item
+                    tourArrow.style.left = `${modalRect.left - 15}px`; // 15px is arrow width
+                    tourArrow.style.top = `${rect.top + rect.height / 2 - modalRect.top - 7}px`; // Center vertically
+                    tourArrow.style.transform = 'rotate(90deg)'; // Point right
+                    tourArrow.style.borderLeft = '15px solid white';
+                    tourArrow.style.borderRight = '15px solid transparent';
+                    tourArrow.style.borderBottom = '15px solid transparent';
+                    tourArrow.style.borderTop = '15px solid transparent';
+                } else {
+                    tourArrow.style.display = 'none';
+                }
+            } else {
+                tourArrow.style.display = 'none';
+            }
+
+            // Update navigation buttons
+            tourBackBtn.disabled = currentTourStepIndex === 0;
+            tourNextBtn.textContent = currentTourStepIndex === tourSteps.length - 1 ? 'Finish' : 'Next ';
+            tourNextBtn.innerHTML += currentTourStepIndex === tourSteps.length - 1 ? '' : '<i class="fas fa-arrow-right"></i>';
+
+            // Execute pre-action if available
+            if (step.preAction) {
+                step.preAction();
+            }
+
+            // Execute action if available
+            if (step.action) {
+                step.action();
+            }
+        }
+
+        function nextTourStep() {
+            if (currentTourStepIndex < tourSteps.length - 1) {
+                currentTourStepIndex++;
+                updateTourContent();
+            } else {
+                endTour();
+            }
+        }
+
+        function prevTourStep() {
+            if (currentTourStepIndex > 0) {
+                currentTourStepIndex--;
+                updateTourContent();
+            }
+        }
+
+        function endTour() {
+            isInTourMode = false; // Reset tour mode flag
+            tourModal.style.display = 'none';
+            document.querySelectorAll('.nav-item.highlight-pulsing').forEach(item => {
+                item.classList.remove('highlight-pulsing');
+            });
+            tourArrow.style.display = 'none';
+            localStorage.setItem('tourShown', 'true'); // Mark tour as shown
+            showView('dashboard'); // Return to dashboard after tour
+        }
+
+
+        // Initialize the page when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial rendering with loading cards
+            window.renderGameCards([]); 
+            
+            // Show tour on first load if not shown before
+            if (localStorage.getItem('tourShown') !== 'true') {
+                showTour();
+            } else {
+                // If Firebase is already initialized by the module script, start listener
+                if (window.db && window.auth && window.auth.currentUser) {
+                    window.initializeFirebaseListener();
+                    showView('dashboard'); // Call showView to set initial state correctly
+                } else {
+                    console.log("Waiting for Firebase to initialize and authenticate...");
+                    gamesContainer.innerHTML = `
+                        <div class="loading-card"></div>
+                        <div class="loading-card"></div>
+                        <div class="loading-card"></div>
+                        <div class="loading-card"></div>
+                        <div class="loading-card"></div>
+                        <div class="loading-card"></div>
+                    `;
+                }
+            }
+
+            // Apply initial zoom to iframe (in case Inbox is opened later)
+            canvasIframe.style.transform = `scale(${currentZoomLevel / 100})`;
+            zoomSlider.value = currentZoomLevel;
+            zoomValueSpan.textContent = `${currentZoomLevel}%`;
+
+            // Tour button event listeners
+            tourNextBtn.addEventListener('click', nextTourStep);
+            tourBackBtn.addEventListener('click', prevTourStep);
+
+            // Event listener for the Games/Subjects nav item (the one that toggles modes)
+            gamesSubjectsNavItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (tourModal.style.display === 'flex') return; // Prevent interaction during tour
+                currentSidebarMode = (currentSidebarMode === 'games') ? 'subjects' : 'games';
+                showView('dashboard'); // Always go to dashboard view when toggling games/subjects
+            });
+
+            // Event listener for Dashboard nav item
+            dashboardNavItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (tourModal.style.display === 'flex') return; // Prevent interaction during tour
+                currentSidebarMode = 'games'; // Default to games mode for dashboard
+                showView('dashboard');
+            });
+
+            // Event listener for Calendar nav item
+            calendarNavItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (tourModal.style.display === 'flex') return; // Prevent interaction during tour
+                // We don't change the main view here, just open the modal
+                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                calendarNavItem.classList.add('active');
+                calendarModal.style.display = 'flex';
+                canvasLinkInput.value = localStorage.getItem('canvasLink') || ''; // Load existing link
+            });
+
+            // Event listener for Save Canvas Link button
+            saveCanvasLinkBtn.addEventListener('click', () => {
+                const link = canvasLinkInput.value.trim();
+                if (link) {
+                    localStorage.setItem('canvasLink', link);
+                    console.log("Canvas link saved:", link);
+                } else {
+                    localStorage.removeItem('canvasLink'); // Clear if empty
+                    console.log("Canvas link cleared.");
+                }
+                calendarModal.style.display = 'none';
+                // If Inbox was the previous view, re-render it to apply new link
+                if (currentMainView === 'inbox') {
+                    showView('inbox');
+                }
+            });
+
+            // Event listener for Inbox nav item
+            inboxNavItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (tourModal.style.display === 'flex') return; // Prevent interaction during tour
+                showView('inbox');
+            });
+
+            // Event listener for History nav item
+            historyNavItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (tourModal.style.display === 'flex') return; // Prevent interaction during tour
+                showView('history');
+            });
+
+            // Zoom Slider functionality
+            zoomSlider.addEventListener('input', () => {
+                currentZoomLevel = parseFloat(zoomSlider.value);
+                localStorage.setItem('canvasZoom', currentZoomLevel); // Save zoom level
+                canvasIframe.style.transform = `scale(${currentZoomLevel / 100})`;
+                zoomValueSpan.textContent = `${currentZoomLevel}%`;
+            });
+
+            // Hotkey listener for Ctrl + ArrowLeft/Right
+            document.addEventListener('keydown', (e) => {
+                if (tourModal.style.display === 'flex') return; // Prevent hotkey interaction during tour
+
+                if (e.ctrlKey) { // Check for Ctrl key
+                    if (e.key === 'ArrowLeft') {
+                        e.preventDefault(); // Prevent default browser back action
+                        // Go back to previous view
+                        if (currentMainView !== previousMainView) {
+                            showView(previousMainView);
+                        } else if (currentMainView !== 'dashboard') { // If no distinct previous, go to dashboard
+                            showView('dashboard');
+                        }
+                    } else if (e.key === 'ArrowRight') {
+                        e.preventDefault(); // Prevent default browser forward action
+                        // Go forward to the view that was active before going back
+                        if (currentMainView === previousMainView && previousMainView !== 'dashboard') { // If we just went back, go forward
+                            showView(previousMainView); // This logic needs refinement if more than 2 views in history
+                        } else if (currentMainView === 'dashboard' && localStorage.getItem('canvasLink')) {
+                            // If on dashboard, and a link exists, assume forward means inbox
+                            showView('inbox');
+                        }
+                    }
+                }
+            });
+
+            // Event listener for other nav items (excluding Dashboard, Games/Subjects, Calendar, Inbox, History, Help)
+            const otherNavItems = document.querySelectorAll('.nav-item:not(#groupsNavItem):not(#dashboardNavItem):not(#gamesSubjectsNavItem):not(#calendarNavItem):not(#inboxNavItem):not(#historyNavItem):not(#helpNavItem)');
+            otherNavItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (tourModal.style.display === 'flex') return; // Prevent interaction during tour
+                    // For these, we just set them active and revert to dashboard view
+                    currentSidebarMode = 'games'; // Default to games mode for dashboard
+                    showView('dashboard');
+                    // Explicitly set active for these items if they don't change the main view
+                    document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Event listener for Groups nav item (remains a static link)
+            groupsNavItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (tourModal.style.display === 'flex') return; // Prevent interaction during tour
+                // This item doesn't change currentMainView, but it should be active
+                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                groupsNavItem.classList.add('active');
+                // If we are in dashboard view, and groups is clicked, we need to show placeholder games
+                if (currentMainView === 'dashboard') {
+                    currentSidebarMode = 'subjects'; // Simulate subject mode for groups
+                    window.renderGameCards(window.placeholderGames);
+                }
+            });
+            
+            // Setup game modal functionality (existing)
+            closeModal.addEventListener('click', () => {
+                gameModal.classList.remove('active');
+                // Reset the iframe source to stop any running games and clear memory
+                gameEmbed.src = ''; 
+            });
+            
+            fullScreenButton.addEventListener('click', () => {
+                if (currentGame && currentGame.url) { 
+                    window.open(currentGame.url, '_blank');
+                }
+            });
+            
+            // Close game modal when clicking outside
+            gameModal.addEventListener('click', (e) => {
+                if (e.target === gameModal) {
+                    gameModal.classList.remove('active');
+                    gameEmbed.src = ''; 
+                }
+            });
+            
+            // Mute button functionality (placeholder for embedded iframes)
+            muteBtn.addEventListener('click', () => {
+                isMuted = !isMuted;
+                muteBtn.innerHTML = isMuted ? 
+                    '<i class="fas fa-volume-mute"></i> Unmute' : 
+                    '<i class="fas fa-volume-up"></i> Mute';
+                
+                console.log(isMuted ? "Game muted (visual only)" : "Game unmuted (visual only)");
+            });
+            
+            // Restart button functionality
+            restartBtn.addEventListener('click', () => {
+                if (gameEmbed.src) { 
+                    gameEmbed.src = gameEmbed.src;
+                }
+            });
+            
+            // Event listener for Help nav item (now triggers tour)
+            helpNavItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                showTour(); // Show the tour when Help is clicked
+                document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+                helpNavItem.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
